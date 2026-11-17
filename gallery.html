@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Yapay Zekâyı Görerek Öğren | Video Galerisi</title>
+<style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #161f36;
+      --border: #303b5c;
+      --muted: #aebbd7;
+      --text: #e9edff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    header {
+      padding: 42px max(20px, calc((100vw - 1150px) / 2));
+      background: radial-gradient(ellipse at 75% 10%, #29316b, #10172c 60%);
+    }
+
+    h1 { font-size: clamp(30px, 5vw, 52px); margin: 8px 0; }
+    h2 { font-size: 26px; }
+    p { color: var(--muted); line-height: 1.6; }
+    main { max-width: 1150px; margin: auto; padding: 20px; }
+    section { margin: 35px 0 60px; }
+
+    .pill {
+      color: #b2c6ff;
+      font-weight: 700;
+      letter-spacing: .08em;
+      font-size: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .screen {
+      aspect-ratio: 9 / 12;
+      background: linear-gradient(145deg, #1c2b53, #11192c);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-align: center;
+      padding: 14px;
+    }
+
+    .screen video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      border-radius: 8px;
+    }
+
+    .screen small { color: var(--muted); }
+    .info { padding: 16px; }
+    .info h3 { margin: 0 0 8px; font-size: 18px; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .actions a {
+      border: 1px solid #55638d;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      background: #273658;
+    }
+
+    .actions a:hover { background: #3b4c79; }
+
+    .notice {
+      padding: 16px;
+      border: 1px solid #3e4e77;
+      border-radius: 12px;
+      background: #18223b;
+    }
+
+    footer { padding: 30px; text-align: center; color: #9da9c7; }
+  </style>
+<link href="style.css" rel="stylesheet"/>
+<script src="nav.js"></script>
+</head><body>
+<nav aria-label="AI Lab ana navigasyon" class="ailab-nav">
+<div class="ailab-nav-inner">
+<a class="ailab-nav-brand" href="index.html">🧠 AI <span>LAB</span></a>
+<button aria-controls="ailab-nav-links" aria-expanded="false" aria-label="Menüyü aç veya kapat" class="ailab-nav-toggle" type="button"><span aria-hidden="true" class="ailab-nav-toggle-icon">☰</span><span>Menü</span></button>
+<div class="ailab-nav-links" id="ailab-nav-links"><a href="index.html">🏠 Başlangıç</a><a href="aktivasyon.html">⚡ Aktivasyon</a><a href="softmax_crossentropy.html">📊 Softmax</a><a href="model_collapse_loss_softmax.html">🎯 Loss Function</a><a href="gradient_descent_backpropagation.html">📉 Öğrenme</a><a href="attention_token_sampling.html">🧩 Attention</a><a href="model_collapse_entropi_perplexity.html">🧬 Model Collapse</a><a href="gallery.html">🎬 Videolar</a><a href="quiz.html">📝 Bilgi Testi</a></div>
+</div>
+</nav>
+<header>
+<div class="pill">GÖRSEL ÖĞRENME ARŞİVİ</div>
+<h1>Yapay Zekâyı Görerek Öğren</h1>
+<!-- <p>14 içerik, iki koleksiyon. Videoları Instagram arayüzü olmadan izle.</p> -->
+</header>
+<main>
+<!-- <div class="notice">
+      <strong>Video klasörü:</strong>
+      HTML dosyasının yanında <code>videos</code> klasörü oluştur.
+      Dosyaları <code>1.mp4</code>, <code>2.mp4</code>, ...,
+      <code>14.mp4</code> olarak adlandır. Eksik videolar için kaynak bağlantısı kullanılabilir.
+    </div> -->
+<section>
+<h2>01 · Kısa Videolar</h2>
+<p>Reels koleksiyonu · 8 içerik</p>
+<div class="grid" id="reels"></div>
+</section>
+<section>
+<h2>02 · Özel Gönderi Serisi</h2>
+<p>Paylaştığın sırayla düzenlenen 7 içerik</p>
+<div class="grid" id="series"></div>
+</section>
+</main>
+<footer>Bağımsız HTML · Yerel MP4 oynatma · Kaynak bağlantıları</footer>
+<script>
+    // Video yollarını buradan değiştirebilirsin.
+    // 1-8: Reels, 8-14: özel gönderi serisi.
+    const groups = {
+      reels: [
+        { title: "Nöron", author: "codenthia", id: "DfkSQ6kRdOE", file: "videos/noron.mp4" },
+        { title: "Katman", author: "codenthia", id: "DfsKAGbN8PR", file: "videos/layer.mp4" },
+        { title: "Aktivasyon", author: "codenthia", id: "Dfpb8ZIRTxV", file: "videos/activation.mp4" },
+        { title: "Öğrenme", author: "codenthia", id: "DfufWIrsYd2", file: "videos/train.mp4" },
+        { title: "Transformer", author: "graduate_ml", id: "DeND0FfJ-5J", file: "videos/transformer.mp4" },
+        // { title: "CNN", author: "susmit.eth", id: "C6mSx9NIZEC", file: "videos/CNN.mp4" },
+        { title: "Sınıflandırma", author: "beyondthelatent", id: "DcoVEl6xE2M", file: "videos/classification.mp4" },
+        { title: "Overfit", author: "beyondthelatent", id: "Dcqy0aLs3BK", file: "videos/overfit.mp4" },
+        { title: "LLM", author: "beyondthelatent", id: "DclriTZxH1D", file: "videos/llm.mp4" },
+        { title: "LLM-2", author: "duzgunzeka", id: "DdOdtSevsJG", file: "videos/llm-2.mp4" }
+      ],
+      series: [
+        { title: "Seri 1", id: "Dew95Vvom9x", file: "videos/ozel/1.mp4" },
+        { title: "Seri 2", id: "De7V-63M7So", file: "videos/ozel/2.mp4" },
+        { title: "Seri 3", id: "DfARtZSMNmI", file: "videos/ozel/3.mp4" },
+        { title: "Seri 4", id: "DfC5r8OvWjg", file: "videos/ozel/4.mp4" },
+        { title: "Seri 5", id: "DfKi01gsZqJ", file: "videos/ozel/5.mp4" },
+        { title: "Seri 6", id: "DfUz_6yIhLJ", file: "videos/ozel/6.mp4" },
+        { title: "Seri 7", id: "DfzxGm4uRC2", file: "videos/ozel/7.mp4" }
+      ]
+    };
+
+    function createVideoCard(item, groupName) {
+      const card = document.createElement("article");
+      card.className = "card";
+
+      const screen = document.createElement("div");
+      screen.className = "screen";
+
+      const video = document.createElement("video");
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.src = item.file;
+      video.setAttribute("aria-label", item.title);
+      screen.appendChild(video);
+
+      const info = document.createElement("div");
+      info.className = "info";
+
+      const heading = document.createElement("h3");
+      heading.textContent = item.title;
+      info.appendChild(heading);
+
+      if (item.author) {
+        const author = document.createElement("p");
+        author.textContent = `Kaynak: @${item.author}`;
+        info.appendChild(author);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const sourceLink = document.createElement("a");
+      const kind = groupName === "reels" ? "reel" : "p";
+      sourceLink.href = `https://www.instagram.com/${kind}/${item.id}/`;
+      sourceLink.target = "_blank";
+      sourceLink.rel = "noopener noreferrer";
+      sourceLink.textContent = "Instagram'da aç ↗";
+      actions.appendChild(sourceLink);
+
+      info.appendChild(actions);
+      card.append(screen, info);
+      return card;
+    }
+
+    Object.entries(groups).forEach(([groupName, items]) => {
+      const container = document.getElementById(groupName);
+      items.forEach(item => container.appendChild(createVideoCard(item, groupName)));
+    });
+  </script>
+</body>
+</html>

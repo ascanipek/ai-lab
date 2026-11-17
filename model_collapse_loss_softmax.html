@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Model Collapse | Loss, Logit, Softmax ve Cross-Entropy Laboratuvarı</title>
+<style>
+    :root {color-scheme:dark;--bg:#0b1020;--panel:#172139;--edge:#334563;--text:#eff5ff;--muted:#b5c4de;--teal:#57e0ce;--amber:#ffc477;--violet:#b9a3ff}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at top right,#21375a,var(--bg) 60%);color:var(--text);font:16px/1.65 system-ui,-apple-system,'Segoe UI',sans-serif}
+    main{max-width:1060px;margin:auto;padding:24px 18px 80px}header{padding:26px 0}h1{font-size:clamp(2rem,5vw,3.25rem);line-height:1.17;margin:8px 0}h2{font-size:1.55rem;margin:0 0 12px}h3{margin:10px 0}p{margin:9px 0 15px}.muted,small{color:var(--muted)}.tag{display:inline-block;border:1px solid var(--edge);border-radius:50px;padding:5px 13px;color:var(--teal)}
+    nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 22px}nav a{color:var(--text);text-decoration:none;border:1px solid var(--edge);border-radius:9px;padding:7px 11px;background:#18233a}
+    section{background:var(--panel);border:1px solid var(--edge);border-radius:18px;padding:24px;margin:20px 0;box-shadow:0 8px 25px #0002}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:14px}.card{padding:16px;background:#10192b;border:1px solid var(--edge);border-radius:13px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.value{font-size:1.65rem;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums}.orange{color:var(--amber)}.violet{color:var(--violet)}
+    input[type=range]{display:block;width:100%;margin:12px 0 18px;accent-color:var(--teal);cursor:pointer;touch-action:pan-y;height:24px}input[type=range]:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+    button,select{border:1px solid #647797;border-radius:9px;background:#263b59;color:white;padding:9px 13px;font:inherit;cursor:pointer}button:hover{background:#365479}.buttons{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.bar{height:15px;background:#293b58;border-radius:30px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#30b9a9,#79e9d6);transition:width .12s}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1528;border-radius:10px;padding:13px;margin:13px 0}.chart{width:100%;height:auto;background:#10192b;border:1px solid var(--edge);border-radius:12px;display:block}.note{border-left:4px solid var(--amber);padding:12px 15px;background:#302b31;border-radius:7px;margin:15px 0}.question{border-left:4px solid var(--violet);padding:12px 15px;background:#171c36;border-radius:7px;margin:14px 0}details{margin:10px 0}summary{cursor:pointer;font-weight:650}.control{margin:13px 0}label{font-weight:650}footer{color:var(--muted);padding:30px 0} @media(max-width:600px){section{padding:16px}}
+  </style>
+<link href="style.css" rel="stylesheet"/>
+</head>
+<body>
+<nav aria-label="AI Lab ana navigasyon" class="ailab-nav">
+<div class="ailab-nav-inner">
+<a class="ailab-nav-brand" href="index.html">🧠 AI <span>LAB</span></a>
+<button aria-controls="ailab-nav-links" aria-expanded="false" aria-label="Menüyü aç veya kapat" class="ailab-nav-toggle" type="button"><span aria-hidden="true" class="ailab-nav-toggle-icon">☰</span><span>Menü</span></button>
+<div class="ailab-nav-links" id="ailab-nav-links"><a href="index.html">🏠 Başlangıç</a><a href="aktivasyon.html">⚡ Aktivasyon</a><a href="softmax_crossentropy.html">📊 Softmax</a><a href="model_collapse_loss_softmax.html">🎯 Loss Function</a><a href="gradient_descent_backpropagation.html">📉 Öğrenme</a><a href="attention_token_sampling.html">🧩 Attention</a><a href="model_collapse_entropi_perplexity.html">🧬 Model Collapse</a><a href="gallery.html">🎬 Videolar</a><a href="quiz.html">📝 Bilgi Testi</a></div>
+</div>
+</nav>
+<main>
+<header>
+<span class="tag">Model Collapse • Öğrenci Etkileşimli Laboratuvarı</span>
+<h1>Model hatasını nasıl ölçüyor, nasıl öğreniyor?</h1>
+<p class="muted">Loss Function → Logit → Softmax → Cross-Entropy → Gradyan → Model Collapse. Fareyle kaydır, sonuçları gözlemle. İnternet gerekmez.</p>
+</header>
+<nav aria-label="Bölümler">
+<a href="#loss">1. Loss nedir?</a><a href="#metrics">2. MAE / MSE</a><a href="#logits">3. Logit / Softmax</a><a href="#ce">4. Cross-Entropy</a><a href="#learn">5. Öğrenme</a><a href="#collapse">6. Collapse</a>
+</nav>
+<section id="loss">
+<h2>1 · Loss Function (kayıp fonksiyonu) nedir?</h2>
+<p>Model bir cevap üretir. <strong>Loss Function</strong>, bu cevabın hedef cevaptan ne kadar farklı olduğunu sayıya dönüştüren kuraldır. <strong>Loss bir kategori adıdır; Cross-Entropy bu kategorideki fonksiyonlardan biridir.</strong></p>
+<div class="grid">
+<div class="card"><strong>Gerçek değer</strong><div class="value">10</div><small>Örneğin bir metindeki kelime sayısı</small></div>
+<div class="card"><label for="prediction">Model tahmini: <output id="predictionOut">6</output></label><input id="prediction" max="20" min="0" step="1" type="range" value="6"/><small>Tahmini değiştir, kayıp nasıl değişiyor?</small></div>
+<div class="card"><strong>Mutlak hata |10 − tahmin|</strong><div class="value" id="absoluteLoss">4</div><small>Doğru tahmin → 0 kayıp</small></div>
+</div>
+<div class="note">Bir loss fonksiyonu kendi başına modeli eğitmez. Kayıp hesaplanır; gradyan ve optimizasyon adımları parametreleri güncellemek için kullanılır.</div>
+</section>
+<section id="metrics">
+<h2>2 · Neden farklı loss fonksiyonları var?</h2>
+<p>Sayısal tahminlerde mutlak hata (MAE) ve kareli hata (MSE) kullanabiliriz. Tek örnekte bunlar sırasıyla <strong>|hata|</strong> ve <strong>hata²</strong> olur. Birden fazla örnekte ortalaması alınır.</p>
+<div class="row"><label for="error">Tahmin hatası</label><output class="value" id="errorOut">3</output></div>
+<input id="error" max="8" min="-8" step="0.5" type="range" value="3"/>
+<div class="grid"><div class="card">Mutlak hata / MAE<div class="value" id="maeOut">3</div></div><div class="card">Kareli hata / MSE<div class="value orange" id="mseOut">9</div></div></div>
+<svg aria-label="Mutlak hata ve kareli hata eğrileri" class="chart" id="errorChart" role="img" viewbox="0 0 640 230"></svg>
+<details><summary>Öğrenci sorusu: Büyük hataları hangi fonksiyon daha sert cezalandırıyor?</summary><p>Kareli hata, hata büyüdükçe daha hızlı artar. Örneğin hata 4 ise mutlak hata 4, kareli hata 16 olur.</p></details>
+</section>
+<section id="logits">
+<h2>3 · Bir dil modeli sonraki token'ı nasıl seçer?</h2>
+<p>Örnek cümle: <strong>“Bugün hava çok ...”</strong> Model, aday token'lara önce <strong>logit</strong> denen ham puanlar verir. Bunlar olasılık değildir. <strong>Softmax</strong>, logitleri toplamı %100 olan bir dağılıma dönüştürür.</p>
+<div class="buttons"><button id="presetDefault">Başlangıç</button><button id="presetWrong">Yanlış token baskın</button><button id="presetEqual">Eşit logitler</button><button id="presetNegative">Hepsi negatif</button></div>
+<div class="grid" id="logitControls">
+<div class="card"><label for="z0">güzel: <output id="z0out">2.0</output></label><input id="z0" max="8" min="-8" step="0.1" type="range" value="2"/><div class="bar"><div class="fill" id="bar0"></div></div><div class="value" id="prob0">—</div></div>
+<div class="card"><label for="z1">soğuk: <output id="z1out">1.0</output></label><input id="z1" max="8" min="-8" step="0.1" type="range" value="1"/><div class="bar"><div class="fill" id="bar1"></div></div><div class="value" id="prob1">—</div></div>
+<div class="card"><label for="z2">bulutlu: <output id="z2out">0.1</output></label><input id="z2" max="8" min="-8" step="0.1" type="range" value="0.1"/><div class="bar"><div class="fill" id="bar2"></div></div><div class="value" id="prob2">—</div></div>
+</div>
+<div class="control"><label for="temperature">Softmax sıcaklığı (T): <output id="tempOut">1.00</output></label><input id="temperature" max="4" min="0.2" step="0.05" type="range" value="1"/></div>
+<div class="formula">pᵢ = exp(zᵢ / T) / Σ exp(zⱼ / T)
+Uygulamada taşmayı önlemek için en büyük ölçeklenmiş logit çıkarılır.</div>
+<p aria-live="polite" id="softmaxText"></p>
+<details><summary>Öğrenci sorusu: Bütün logitler negatifse Softmax çalışır mı?</summary><p>Evet. Üstel fonksiyon her sonlu girdide pozitiftir. Önemli olan logitler arasındaki farktır. Hepsine aynı sayı eklemek olasılıkları değiştirmez.</p></details>
+</section>
+<section id="ce">
+<h2>4 · Cross-Entropy: Doğru token'a ne kadar olasılık verdin?</h2>
+<p>Eğitim verisinde hedef token <strong>“bulutlu”</strong> olsun. Model başka bir token'a yüksek olasılık verirse ceza artar. Tek doğru token için kayıp <strong>−ln(p<sub>hedef</sub>)</strong> olarak hesaplanır.</p>
+<div class="row"><label for="truth">Hedef token</label><select id="truth"><option value="0">güzel</option><option value="1">soğuk</option><option selected="" value="2">bulutlu</option></select></div>
+<div class="grid"><div class="card">Hedef token olasılığı<div class="value" id="targetProb">—</div></div><div class="card">Cross-Entropy kaybı<div class="value orange" id="ceLoss">—</div></div></div>
+<div class="formula" id="ceFormula"></div>
+<svg aria-label="Cross-Entropy kaybının hedef token olasılığına göre grafiği" class="chart" id="ceChart" role="img" viewbox="0 0 640 250"></svg>
+<div class="buttons"><button id="ceRight">Doğru ve emin</button><button id="ceWrong">Yanlış ve emin</button><button id="ceUncertain">Kararsız</button></div>
+<details><summary>Neden basitçe 1 − p kullanmıyoruz?</summary><p>−ln(p), doğru token'a çok küçük olasılık verildiğinde çok daha büyük ceza üretir. Ayrıca Softmax ile birleşince logitlere göre türev p − y biçiminde sadeleşir. Bu, eğitim için kullanışlı bir gradyandır.</p></details>
+</section>
+<section id="learn">
+<h2>5 · Model nasıl öğreniyor?</h2>
+<p>Softmax + Cross-Entropy için (T=1 iken) logitlere göre gradyan <strong>pᵢ − yᵢ</strong> olur. Aşağıdaki simülasyon yalnızca logitleri güncelliyor; gerçek modelde geri yayılım ağın ağırlıklarını değiştirir.</p>
+<div class="grid" id="gradientCards"><div class="card" id="grad0"></div><div class="card" id="grad1"></div><div class="card" id="grad2"></div></div>
+<div class="control"><label for="lr">Öğrenme oranı: <output id="lrOut">0.50</output></label><input id="lr" max="1.5" min="0.05" step="0.05" type="range" value="0.5"/></div>
+<div class="buttons"><button id="trainOne">1 eğitim adımı</button><button id="trainTen">10 eğitim adımı</button><button id="resetTrain">Sıfırla</button></div>
+<p aria-live="polite" id="trainStatus">Henüz eğitim adımı uygulanmadı.</p>
+<svg aria-label="Eğitim adımlarına göre kayıp değişimi" class="chart" id="historyChart" role="img" viewbox="0 0 640 210"></svg>
+<small>Temperature 1 değilse türev (p − y) / T olur; eğitim adımı bu düzeltmeyi kullanır.</small>
+</section>
+<section id="collapse">
+<h2>6 · Model Collapse projesiyle bağlantısı</h2>
+<p>Şimdi kritik soru: <strong>Cross-Entropy kaybı düşüyorsa model her bakımdan daha iyi mi?</strong> Hayır. Kayıp, hangi veri üzerinde ölçüldüğüne bağlıdır. Model, daralmış sentetik eğitim verisine daha iyi uyarken nadir sözcükleri ve çeşitliliği kaybedebilir.</p>
+<div class="grid">
+<div class="card"><h3>Çeşitli insan metni</h3><p class="muted">Örnek token dağılımı</p><div class="formula">yaygın  %60
+orta    %25
+nadir   %15</div></div>
+<div class="card"><h3>Daralmış sentetik metin</h3><p class="muted">Öğretim amaçlı varsayımsal dağılım</p><div class="formula">yaygın  %90
+orta     %9
+nadir    %1</div></div>
+</div>
+<p><label for="rare">Modelin nadir token'a verdiği olasılık: <output id="rareOut">15%</output></label><input id="rare" max="30" min="1" step="1" type="range" value="15"/></p>
+<div class="grid"><div class="card">İnsan dağılımına göre beklenen kayıp<div class="value" id="humanLoss">—</div></div><div class="card">Sentetik dağılıma göre beklenen kayıp<div class="value orange" id="syntheticLoss">—</div></div></div>
+<p class="muted">Basitleştirme: Modelin nadir token olasılığı r, orta token olasılığı %10, yaygın token olasılığı 1 − r − %10. Kayıp = −Σ qᵢ ln(pᵢ). Bu gerçek deney sonucu değil, karşılaştırma simülasyonudur.</p>
+<div class="note">Proje çıkarımı: <strong>Eğitim loss'u tek başına çöküş kanıtı değildir.</strong> İnsan kaynaklı sabit test seti, nadir token başarımı, çeşitlilik ve diğer ölçümleri birlikte izlemek gerekir.</div>
+<details><summary>Öğrenci tartışması: Sentetik veride loss düşerken insan verisinde yükselebilir mi?</summary><p>Evet. İki veri dağılımı farklı olduğunda birine uyum artarken diğerine uyum azalabilir. Bunun gerçekten olup olmadığını deney ve bağımsız test verisi gösterir.</p></details>
+</section>
+<footer>Öğretmen notu: Sayısal örnekler eğitim amaçlıdır. Bu sayfa gerçek bir LLM eğitimi yapmaz; Softmax, Cross-Entropy ve basitleştirilmiş gradyan güncellemesini gösterir. Harici kütüphane ve internet gerektirmez.</footer>
+</main>
+<script>
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const fmt = (v, digits = 3) => Number(v).toFixed(digits);
+  const names = ['güzel', 'soğuk', 'bulutlu'];
+  let logits = [2, 1, 0.1];
+  let truth = 2;
+  let temperature = 1;
+  let learningRate = 0.5;
+  let history = [];
+
+  function softmax(values, t) {
+    const scaled = values.map(v => v / t);
+    const max = Math.max(...scaled);
+    const exp = scaled.map(v => Math.exp(v - max));
+    const total = exp.reduce((sum, v) => sum + v, 0);
+    return exp.map(v => v / total);
+  }
+
+  function svgLineChart(id, fn, xmin, xmax, ymin, ymax, pointX, color = '#b9a3ff') {
+    const width = 640, height = 250, left = 55, right = 20, top = 18, bottom = 40;
+    const px = x => left + (x - xmin) / (xmax - xmin) * (width - left - right);
+    const py = y => top + (ymax - y) / (ymax - ymin) * (height - top - bottom);
+    let markup = '';
+    for (let k = 0; k <= 4; k++) {
+      const y = ymin + (ymax - ymin) * k / 4;
+      markup += `<line x1="${left}" y1="${py(y)}" x2="${width-right}" y2="${py(y)}" stroke="#34445e"/>`;
+      markup += `<text x="${left-9}" y="${py(y)+4}" text-anchor="end" fill="#b5c4de" font-size="12">${fmt(y,1)}</text>`;
+    }
+    let path = '';
+    for (let k = 0; k <= 280; k++) {
+      const x = xmin + (xmax - xmin) * k / 280;
+      const y = Math.max(ymin, Math.min(ymax, fn(x)));
+      path += `${k === 0 ? 'M' : 'L'}${px(x).toFixed(2)} ${py(y).toFixed(2)} `;
+    }
+    markup += `<path d="${path}" fill="none" stroke="${color}" stroke-width="3.5"/>`;
+    if (pointX !== null) {
+      const pointY = Math.max(ymin, Math.min(ymax, fn(pointX)));
+      markup += `<circle cx="${px(pointX)}" cy="${py(pointY)}" r="7" fill="#ffc477" stroke="white" stroke-width="1.5"/>`;
+    }
+    markup += `<text x="${left}" y="${height-10}" fill="#b5c4de" font-size="12">${fmt(xmin,1)}</text><text x="${width-right}" y="${height-10}" text-anchor="end" fill="#b5c4de" font-size="12">${fmt(xmax,1)}</text>`;
+    $(id).innerHTML = markup;
+  }
+
+  function renderBasics() {
+    const prediction = Number($('prediction').value);
+    $('predictionOut').textContent = prediction;
+    $('absoluteLoss').textContent = Math.abs(10 - prediction);
+    const error = Number($('error').value);
+    $('errorOut').textContent = fmt(error,1);
+    $('maeOut').textContent = fmt(Math.abs(error),2);
+    $('mseOut').textContent = fmt(error * error,2);
+    const w=640,h=230,l=50,r=18,t=15,b=35;
+    const px=x=>l+(x+8)/16*(w-l-r),py=y=>h-b-y/64*(h-t-b);
+    let svg='';
+    for(let v=0;v<=64;v+=16) svg+=`<line x1="${l}" y1="${py(v)}" x2="${w-r}" y2="${py(v)}" stroke="#34445e"/>`;
+    for(const [fn,color] of [[x=>Math.abs(x),'#57e0ce'],[x=>x*x,'#ffc477']]){
+      let d='';for(let i=0;i<=200;i++){const x=-8+i*16/200;d+=`${i?'L':'M'}${px(x)} ${py(fn(x))} `;}
+      svg+=`<path d="${d}" fill="none" stroke="${color}" stroke-width="3"/>`;
+      svg+=`<circle cx="${px(error)}" cy="${py(fn(error))}" r="5" fill="${color}"/>`;
+    }
+    svg+='<text x="60" y="22" fill="#57e0ce" font-size="13">MAE</text><text x="115" y="22" fill="#ffc477" font-size="13">MSE</text>';
+    $('errorChart').innerHTML=svg;
+  }
+
+  function renderModel() {
+    const p = softmax(logits, temperature);
+    for (let i = 0; i < 3; i++) {
+      $('z'+i+'out').textContent = fmt(logits[i],1);
+      $('prob'+i).textContent = fmt(p[i]*100,1)+'%';
+      $('bar'+i).style.width = (p[i]*100)+'%';
+      // Slider elements are NOT rebuilt. Dragging remains uninterrupted.
+      if (document.activeElement !== $('z'+i)) $('z'+i).value = logits[i];
+      const g = (p[i]-(i===truth?1:0))/temperature;
+      $('grad'+i).innerHTML = `<strong>${names[i]}</strong><div class="value">${g>=0?'+':''}${fmt(g,3)}</div><small>∂L/∂z = (p − y) / T</small>`;
+    }
+    $('tempOut').textContent=fmt(temperature,2);
+    $('lrOut').textContent=fmt(learningRate,2);
+    const best=p.indexOf(Math.max(...p));
+    $('softmaxText').textContent=`En olası token: “${names[best]}” (%${fmt(p[best]*100,1)}). Toplam: %${fmt(p.reduce((a,b)=>a+b,0)*100,1)}.`;
+    const targetP=Math.max(Number.MIN_VALUE,p[truth]);
+    const loss=-Math.log(targetP);
+    $('targetProb').textContent=fmt(targetP*100,2)+'%';
+    $('ceLoss').textContent=fmt(loss,4);
+    $('ceFormula').textContent=`L = −ln(p_hedef) = −ln(${fmt(targetP,6)}) = ${fmt(loss,5)}`;
+    svgLineChart('ceChart',x=>-Math.log(Math.max(x,0.000001)),0.01,1,0,5,targetP);
+    renderHistory();
+  }
+
+  function setPreset(values) {
+    logits=[...values]; history=[];
+    for(let i=0;i<3;i++) $('z'+i).value=logits[i];
+    $('trainStatus').textContent='Yeni senaryo yüklendi.';
+    renderModel();
+  }
+
+  function trainingStep() {
+    const p=softmax(logits,temperature);
+    const loss=-Math.log(Math.max(p[truth],Number.MIN_VALUE));
+    if(history.length===0) history.push(loss);
+    logits=logits.map((z,i)=>z-learningRate*(p[i]-(i===truth?1:0))/temperature);
+    const next=softmax(logits,temperature);
+    history.push(-Math.log(Math.max(next[truth],Number.MIN_VALUE)));
+  }
+
+  function renderHistory() {
+    const svg=$('historyChart');
+    if(history.length<2){svg.innerHTML='<text x="25" y="110" fill="#b5c4de" font-size="16">Eğitim adımlarını başlatınca kayıp grafiği burada oluşacak.</text>';return;}
+    const max=Math.max(0.2,...history)*1.1;
+    const pts=history.map((v,i)=>`${45+i/(history.length-1)*570},${180-v/max*145}`).join(' ');
+    svg.innerHTML=`<line x1="45" y1="180" x2="620" y2="180" stroke="#60718d"/><polyline points="${pts}" fill="none" stroke="#57e0ce" stroke-width="3" stroke-linejoin="round"/><text x="45" y="200" fill="#b5c4de" font-size="12">0. adım</text><text x="620" y="200" text-anchor="end" fill="#b5c4de" font-size="12">${history.length-1}. adım</text><text x="50" y="20" fill="#b5c4de" font-size="12">Loss</text>`;
+  }
+
+  function renderCollapse() {
+    const r=Number($('rare').value)/100;
+    const model=[0.9-r,0.1,r];
+    const human=[0.6,0.25,0.15],synthetic=[0.9,0.09,0.01];
+    const ce=q=>-q.reduce((sum,v,i)=>sum+v*Math.log(model[i]),0);
+    $('rareOut').textContent=Math.round(r*100)+'%';
+    $('humanLoss').textContent=fmt(ce(human),3);
+    $('syntheticLoss').textContent=fmt(ce(synthetic),3);
+  }
+
+  $('prediction').addEventListener('input',renderBasics);
+  $('error').addEventListener('input',renderBasics);
+  for(let i=0;i<3;i++) $('z'+i).addEventListener('input',event=>{logits[i]=Number(event.target.value);history=[];renderModel();});
+  $('temperature').addEventListener('input',event=>{temperature=Number(event.target.value);history=[];renderModel();});
+  $('truth').addEventListener('change',event=>{truth=Number(event.target.value);history=[];renderModel();});
+  $('lr').addEventListener('input',event=>{learningRate=Number(event.target.value);renderModel();});
+  $('rare').addEventListener('input',renderCollapse);
+  $('presetDefault').addEventListener('click',()=>setPreset([2,1,0.1]));
+  $('presetWrong').addEventListener('click',()=>setPreset([5,-1,-3]));
+  $('presetEqual').addEventListener('click',()=>setPreset([1,1,1]));
+  $('presetNegative').addEventListener('click',()=>setPreset([-2,-3,-4]));
+  $('ceRight').addEventListener('click',()=>{const v=[-2,-2,-2];v[truth]=5;setPreset(v);});
+  $('ceWrong').addEventListener('click',()=>{const v=[-2,-2,-2];v[(truth+1)%3]=5;setPreset(v);});
+  $('ceUncertain').addEventListener('click',()=>setPreset([0,0,0]));
+  $('trainOne').addEventListener('click',()=>{trainingStep();renderModel();$('trainStatus').textContent=`${history.length-1} eğitim adımı. Son kayıp: ${fmt(history.at(-1),4)}`;});
+  $('trainTen').addEventListener('click',()=>{for(let i=0;i<10;i++)trainingStep();renderModel();$('trainStatus').textContent=`${history.length-1} eğitim adımı. Son kayıp: ${fmt(history.at(-1),4)}`;});
+  $('resetTrain').addEventListener('click',()=>setPreset([2,1,0.1]));
+  renderBasics();renderModel();renderCollapse();
+</script>
+<script src="nav.js"></script>
+</body>
+</html>
